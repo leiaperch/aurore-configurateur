@@ -43,6 +43,12 @@ export class Car {
   private roof!: THREE.Mesh;
   private roofPaint!: THREE.Material;
   private roofGlass!: THREE.MeshPhysicalMaterial;
+  private roofBlack!: THREE.MeshPhysicalMaterial;
+  private glass!: THREE.MeshPhysicalMaterial;
+  private disc!: THREE.MeshStandardMaterial;
+  private plateCanvas!: HTMLCanvasElement;
+  private plateTex!: THREE.CanvasTexture;
+  private plate = '';
   private lamps: { mat: THREE.MeshStandardMaterial; color: THREE.Color }[] = [];
   private parts = new Map<Part, { node: THREE.Object3D; axis: 'x' | 'y' | 'z'; angle: number; base: number; t: number; basePos: THREE.Vector3; hinge?: THREE.Vector3; twin?: THREE.Object3D }[]>();
   private roofTwin?: THREE.Mesh;
@@ -66,6 +72,12 @@ export class Car {
     this.root.updateMatrixWorld(true);
 
     const brandMap = makeBrandTexture();
+    this.plateCanvas = document.createElement('canvas');
+    this.plateCanvas.width = 512;
+    this.plateCanvas.height = 128;
+    this.plateTex = new THREE.CanvasTexture(this.plateCanvas);
+    this.plateTex.colorSpace = THREE.SRGBColorSpace;
+    this.plateTex.flipY = false;
     const byName = new Map<string, THREE.MeshStandardMaterial>();
     model.traverse((o) => {
       const mesh = o as THREE.Mesh;
@@ -79,10 +91,11 @@ export class Car {
         if (img && img.width === 512 && img.height === 128) mat[slot] = brandMap;
       }
       if (mat.name === 'Dashboard') mat.emissiveMap = makeDashTexture();
+      if (mat.name === 'License') mat.map = this.plateTex;
     });
 
     // verre : réflexions de l'environnement sans passe de transmission (une passe de rendu en moins)
-    const glass = new THREE.MeshPhysicalMaterial({
+    const glass = (this.glass = new THREE.MeshPhysicalMaterial({
       name: 'Glass',
       color: 0x0a0c0f,
       metalness: 0,
@@ -92,7 +105,7 @@ export class Car {
       envMapIntensity: 1.6,
       side: THREE.DoubleSide,
       depthWrite: false,
-    });
+    }));
 
     this.paint = (byName.get('Paint 1 Carmine') as THREE.MeshPhysicalMaterial).clone();
     this.paint.name = 'Paint';
@@ -102,6 +115,8 @@ export class Car {
     this.rimFace = (byName.get('Rim2')!.clone());
     this.rimBase = (byName.get('Rim1')!.clone());
     this.caliper = (byName.get('Brake')!.clone());
+    this.disc = byName.get('Disc')!.clone();
+    this.roofBlack = new THREE.MeshPhysicalMaterial({ color: 0x0b0c0d, metalness: 0.25, roughness: 0.14, clearcoat: 1, envMapIntensity: 1.1 });
     this.roofGlass = new THREE.MeshPhysicalMaterial({
       color: 0x050608,
       metalness: 0.1,
@@ -123,6 +138,7 @@ export class Car {
       else if (name === 'Rim2') mesh.material = this.rimFace;
       else if (name === 'Rim1') mesh.material = this.rimBase;
       else if (name === 'Brake') mesh.material = this.caliper;
+      else if (name === 'Disc') mesh.material = this.disc;
       // les variantes glTF d'origine ne servent plus : le catalogue pilote les matériaux
       delete mesh.userData.variantMaterials;
       if (mesh.name === 'BodyRoofPanel' || mesh.parent?.name === 'BodyRoofPanel') this.roof = mesh;
@@ -202,14 +218,63 @@ export class Car {
     tweenColor(tl, this.caliper.color, caliper.hex!);
     tweenColor(tl, this.upholstery.color, interior.hex!);
 
-    const glassRoof = hasOption(catalog, config, 'toit');
-    if (glassRoof !== (this.roof.material === this.roofGlass)) {
+    // options qui se voient sur le modèle
+    const blackPack = hasOption(catalog, config, 'pack-noir');
+    if (blackPack) {
+      const black = ACCENTS['gloss-black'];
+      tweenColor(tl, this.accent.color, black.color);
+      tl.to(this.accent, { metalness: black.metalness, roughness: black.roughness, clearcoat: live(black.clearcoat), iridescence: live(black.iridescence) }, 0);
+    }
+
+    const tinted = hasOption(catalog, config, 'vitres');
+    tweenColor(tl, this.glass.color, tinted ? '#040506' : '#0a0c0f');
+    tl.to(this.glass, { opacity: tinted ? 0.72 : 0.38, roughness: tinted ? 0.06 : 0.02 }, 0);
+
+    const carbon = hasOption(catalog, config, 'freins');
+    tweenColor(tl, this.disc.color, carbon ? '#2b2b2e' : '#8f9195');
+    tl.to(this.disc, { metalness: carbon ? 0.1 : 0.85, roughness: carbon ? 0.55 : 0.4 }, 0);
+
+    this.setPlate(config.plate);
+
+    const roofMat = hasOption(catalog, config, 'toit') ? this.roofGlass : hasOption(catalog, config, 'toit-noir') ? this.roofBlack : this.roofPaint;
+    if (roofMat !== this.roof.material) {
       tl.call(() => {
-        this.roof.material = glassRoof ? this.roofGlass : this.roofPaint;
-        if (this.roofTwin) this.roofTwin.material = this.roof.material;
+        this.roof.material = roofMat;
+        if (this.roofTwin) this.roofTwin.material = roofMat;
       }, undefined, d * 0.5);
     }
     if (d === 0) tl.progress(1);
+  }
+
+  // plaque d'immatriculation dessinée sur la toile, redessinée à chaque frappe
+  setPlate(text: string) {
+    if (text === this.plate) return;
+    this.plate = text;
+    const g = this.plateCanvas.getContext('2d')!;
+    g.fillStyle = '#0d0d0f';
+    g.fillRect(0, 0, 512, 128);
+    g.fillStyle = '#1b3a8f';
+    g.fillRect(6, 10, 54, 108);
+    g.fillStyle = '#f2c230';
+    g.font = '600 20px "Archivo", Arial, sans-serif';
+    g.textAlign = 'center';
+    g.fillText('F', 33, 96);
+    g.beginPath();
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      g.moveTo(33 + Math.cos(a) * 16, 46 + Math.sin(a) * 16);
+      g.arc(33 + Math.cos(a) * 16, 46 + Math.sin(a) * 16, 1.8, 0, Math.PI * 2);
+    }
+    g.fill();
+    g.fillStyle = '#f4f4f2';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    const size = text.length > 7 ? 62 : 72;
+    g.font = `600 ${size}px "Archivo", Arial, sans-serif`;
+    g.letterSpacing = '4px';
+    g.fillText(text || '—', 286, 68);
+    this.plateTex.needsUpdate = true;
+    this.stage.invalidate();
   }
 
   isOpen(part: Part) {

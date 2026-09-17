@@ -4,6 +4,7 @@ import { Stage } from './stage';
 import { Car, type Part } from './car';
 import { Views, type ViewId } from './views';
 import { Ui, toast, type Step } from './ui';
+import { ThemeSwitch } from './theme';
 
 const STEP_VIEW: Partial<Record<Step, ViewId>> = {
   trim: 'trois-quarts',
@@ -24,7 +25,8 @@ async function boot() {
 
   const stage = new Stage(document.querySelector('#viewport')!);
   const car = new Car(stage);
-  stage.buildStudio();
+  const themes = new ThemeSwitch((theme) => stage.buildStudio(theme === 'dark'));
+  stage.buildStudio(themes.theme === 'dark');
   await car.load('models/aurore.glb', (p) => progress(p * 0.9));
   car.apply(catalog, config);
 

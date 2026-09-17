@@ -234,9 +234,63 @@
       "name": "Toit panoramique teinté",
       "price": 1600,
       "visual": true,
-      "group": "Confort",
+      "group": "Extérieur",
       "description": "Verre feuilleté teinté sur toute la longueur du pavillon.",
-      "detail": "Filtre 95 % des UV · store occultant électrique"
+      "detail": "Filtre 95 % des UV · store occultant électrique",
+      "excludes": [
+        "toit-noir"
+      ]
+    },
+    {
+      "id": "toit-noir",
+      "name": "Toit contrasté noir",
+      "price": 700,
+      "visual": true,
+      "group": "Extérieur",
+      "description": "Pavillon, montants et becquet peints en noir brillant.",
+      "detail": "Contraste avec la teinte de carrosserie",
+      "excludes": [
+        "toit"
+      ]
+    },
+    {
+      "id": "vitres",
+      "name": "Vitrage surteinté",
+      "price": 550,
+      "visual": true,
+      "group": "Extérieur",
+      "description": "Vitres arrière et lunette assombries en usine.",
+      "detail": "Habitacle moins visible · moins de chaleur en été"
+    },
+    {
+      "id": "pack-noir",
+      "name": "Pack extérieur noir",
+      "price": 1200,
+      "visual": true,
+      "group": "Extérieur",
+      "description": "Boucliers, bas de caisse, coques de rétroviseurs et poignées en noir brillant.",
+      "detail": "Remplace les inserts de la version"
+    },
+    {
+      "id": "freins",
+      "name": "Freins carbone-céramique",
+      "price": 4900,
+      "visual": true,
+      "group": "Performance",
+      "description": "Disques carbone-céramique, étriers fixes six pistons.",
+      "detail": "−18 kg de masse non suspendue · disques rainurés",
+      "trims": [
+        "gt",
+        "signature"
+      ]
+    },
+    {
+      "id": "hiver",
+      "name": "Pack hiver",
+      "price": 850,
+      "group": "Confort",
+      "description": "Pompe à chaleur, sièges et volant chauffants.",
+      "detail": "Jusqu’à 60 km d’autonomie gagnés en hiver"
     },
     {
       "id": "audio",
@@ -257,14 +311,6 @@
       "group": "Technologie",
       "description": "Conduite assistée sur autoroute et stationnement automatique.",
       "detail": "Régulateur adaptatif · maintien de voie · caméra 360°"
-    },
-    {
-      "id": "hiver",
-      "name": "Pack hiver",
-      "price": 850,
-      "group": "Confort",
-      "description": "Pompe à chaleur, sièges et volant chauffants.",
-      "detail": "Jusqu’à 60 km d’autonomie gagnés en hiver"
     },
     {
       "id": "attelage",

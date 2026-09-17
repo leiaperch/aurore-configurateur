@@ -62,9 +62,13 @@ export interface Config {
   calipers: string;
   interior: string;
   options: string[];
+  plate: string;
 }
 
-export type SingleKey = Exclude<keyof Config, 'options'>;
+export type SingleKey = Exclude<keyof Config, 'options' | 'plate'>;
+
+// Plaque : lettres, chiffres et tirets, comme une immatriculation française
+export const cleanPlate = (value: string) => value.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 9);
 
 export async function loadCatalog(url = 'catalog.json'): Promise<Catalog> {
   const res = await fetch(url);
@@ -90,6 +94,7 @@ export function defaultConfig(catalog: Catalog): Config {
     calipers: catalog.calipers[0].id,
     interior: catalog.interiors[0].id,
     options: [],
+    plate: 'AU-076-RE',
   };
 }
 
@@ -104,7 +109,7 @@ const LABELS: Record<SingleKey, string> = {
 // Rend une configuration valide et explique chaque correction à l'utilisateur.
 export function normalize(catalog: Catalog, input: Config): { config: Config; notices: string[] } {
   const notices: string[] = [];
-  const config: Config = { ...input, options: [...input.options] };
+  const config: Config = { ...input, options: [...input.options], plate: cleanPlate(input.plate) };
   const trim = find(catalog.trims, config.trim);
   config.trim = trim.id;
 
@@ -178,22 +183,24 @@ export function monthly(catalog: Catalog, total: number): number {
   return Math.max(0, Math.round((financed * r) / (1 - Math.pow(1 + r, -months))));
 }
 
-// URL partageable et lisible : ?c=gt.carmin.bronze.rouge.perle.toit+audio
+// URL partageable et lisible : ?c=gt.carmin.bronze.rouge.perle.toit,audio.AU-076-RE
+// (les options sont séparées par une virgule : un « + » serait relu comme une espace par URLSearchParams)
 export function encodeConfig(config: Config): string {
-  return [config.trim, config.paint, config.wheels, config.calipers, config.interior, config.options.join('+')].join('.');
+  return [config.trim, config.paint, config.wheels, config.calipers, config.interior, config.options.join(','), config.plate].join('.');
 }
 
 export function decodeConfig(catalog: Catalog, value: string | null): Config {
   const base = defaultConfig(catalog);
   if (!value) return base;
-  const [trim, paint, wheels, calipers, interior, options] = value.split('.');
+  const [trim, paint, wheels, calipers, interior, options, plate] = value.split('.');
   return {
     trim: trim || base.trim,
     paint: paint || base.paint,
     wheels: wheels || base.wheels,
     calipers: calipers || base.calipers,
     interior: interior || base.interior,
-    options: options ? options.split('+').filter(Boolean) : [],
+    options: options ? options.split(/[,+ ]/).filter(Boolean) : [],
+    plate: plate ? cleanPlate(plate) : base.plate,
   };
 }
 

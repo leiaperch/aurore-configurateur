@@ -59,9 +59,12 @@ export class Stage {
   // dessinent les reflets sur la carrosserie. Aucune image HDR à télécharger, un seul calcul au chargement.
   // Studio photo : un cyclorama clair et quelques sources larges, converti une fois en éclairage
   // d'environnement (PMREM). C'est l'éclairage d'un shooting automobile, sans image HDR à télécharger.
-  buildStudio() {
+  private floorMat?: THREE.ShaderMaterial;
+  private shadowMat?: THREE.ShaderMaterial;
+
+  buildStudio(dark = false) {
     const room = new THREE.Scene();
-    const shell = new THREE.Mesh(new THREE.BoxGeometry(34, 14, 34), new THREE.MeshBasicMaterial({ color: 0xbfc0c2, side: THREE.BackSide }));
+    const shell = new THREE.Mesh(new THREE.BoxGeometry(34, 14, 34), new THREE.MeshBasicMaterial({ color: dark ? 0x1a1b1d : 0xbfc0c2, side: THREE.BackSide }));
     shell.position.y = 6;
     room.add(shell);
     const panel = (w: number, h: number, power: number, pos: [number, number, number], rot: [number, number, number], color = 0xffffff) => {
@@ -78,8 +81,9 @@ export class Stage {
     for (const x of [-2.6, 2.6]) panel(0.5, 14, 9, [x, 5.4, 0], [Math.PI / 2, 0, 0]);
 
     const pmrem = new THREE.PMREMGenerator(this.renderer);
+    this.scene.environment?.dispose();
     this.scene.environment = pmrem.fromScene(room, 0.03).texture;
-    this.scene.environmentIntensity = 1;
+    this.scene.environmentIntensity = dark ? 1.25 : 1;
     pmrem.dispose();
     room.traverse((o) => {
       const m = o as THREE.Mesh;
@@ -89,13 +93,21 @@ export class Stage {
       }
     });
 
-    // sol : gris clair, légèrement réfléchissant sous la voiture, qui se fond dans la page sur les bords
+    if (this.floorMat) {
+      // changement de thème : l'éclairage vient d'être refait, il ne reste que la couleur du sol
+      this.floorMat.uniforms.uColor.value.set(dark ? 0x121315 : 0xe9e8e5);
+      if (this.shadowMat) this.shadowMat.uniforms.uColor.value.set(dark ? 0x000000 : 0x2a2a2d);
+      this.invalidate();
+      return;
+    }
+
+    // sol : uni, légèrement réfléchissant sous la voiture, qui se fond dans la page sur les bords
     const floor = new THREE.Mesh(
       new THREE.CircleGeometry(14, 96),
       new THREE.ShaderMaterial({
         transparent: true,
         depthWrite: false,
-        uniforms: { uColor: { value: new THREE.Color(0xe9e8e5) } },
+        uniforms: { uColor: { value: new THREE.Color(dark ? 0x121315 : 0xe9e8e5) } },
         vertexShader: /* glsl */ `varying vec2 vP; void main(){ vP = position.xy; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
         fragmentShader: /* glsl */ `
           uniform vec3 uColor; varying vec2 vP;
@@ -107,6 +119,7 @@ export class Stage {
           }`,
       })
     );
+    this.floorMat = floor.material as THREE.ShaderMaterial;
     floor.rotation.x = -Math.PI / 2;
     floor.renderOrder = -2;
     this.scene.add(floor);
@@ -115,6 +128,7 @@ export class Stage {
 
   addContactShadow(target: THREE.Object3D, size: THREE.Vector2) {
     this.shadow = new ContactShadow(this.renderer, target, size);
+    this.shadowMat = this.shadow.plane.material as THREE.ShaderMaterial;
     this.scene.add(this.shadow.plane);
     this.shadowDirty = true;
     this.invalidate();
@@ -260,14 +274,14 @@ class ContactShadow {
     this.quadScene.add(this.quad);
 
     const planeMat = new THREE.ShaderMaterial({
-      uniforms: { tShadow: { value: this.rt.texture }, uOpacity: { value: 0.55 } },
+      uniforms: { tShadow: { value: this.rt.texture }, uOpacity: { value: 0.55 }, uColor: { value: new THREE.Color(0x2a2a2d) } },
       vertexShader: /* glsl */ `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
       fragmentShader: /* glsl */ `
-        uniform sampler2D tShadow; uniform float uOpacity; varying vec2 vUv;
+        uniform sampler2D tShadow; uniform float uOpacity; uniform vec3 uColor; varying vec2 vUv;
         void main(){
           float a = texture2D(tShadow, vec2(vUv.x, 1.0 - vUv.y)).a;
           float edge = smoothstep(0.5, 0.36, length(vUv - 0.5));
-          gl_FragColor = vec4(vec3(0.16, 0.16, 0.17), a * uOpacity * edge);
+          gl_FragColor = vec4(uColor, a * uOpacity * edge);
         }`,
       transparent: true,
       depthWrite: false,

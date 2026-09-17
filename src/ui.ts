@@ -1,6 +1,7 @@
 import gsap from 'gsap';
 import {
   availableOn,
+  cleanPlate,
   encodeConfig,
   find,
   formatPrice,
@@ -234,10 +235,33 @@ export class Ui {
       wrap.append(section);
     }
 
+    wrap.append(this.plateSection());
+
     const foot = el('p', 'opt-subtotal');
     foot.innerHTML = `<span>Sous-total options</span><strong>${subtotal ? formatPrice(subtotal) : '—'}</strong>`;
     wrap.append(foot);
     return wrap;
+  }
+
+  // personnalisation gravée sur le modèle : la plaque est redessinée à chaque frappe
+  private plateSection() {
+    const section = el('section', 'opt-group');
+    section.innerHTML = `
+      <h3 class="opt-group-title">Personnalisation</h3>
+      <div class="plate-row">
+        <label for="plate">Plaque d'immatriculation<span>Écrite en direct sur la voiture, vue arrière</span></label>
+        <input id="plate" maxlength="9" spellcheck="false" autocomplete="off" value="${this.config.plate}" />
+      </div>`;
+    const input = section.querySelector('input')!;
+    input.addEventListener('input', () => {
+      const plate = cleanPlate(input.value);
+      const start = input.selectionStart;
+      input.value = plate;
+      input.setSelectionRange(start, start);
+      this.config = { ...this.config, plate };
+      this.hooks.onChange(this.config);
+    });
+    return section;
   }
 
   private optionRow(option: Option, trimName: string) {
