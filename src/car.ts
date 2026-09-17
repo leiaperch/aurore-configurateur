@@ -44,7 +44,8 @@ export class Car {
   private roofPaint!: THREE.Material;
   private roofGlass!: THREE.MeshPhysicalMaterial;
   private lamps: { mat: THREE.MeshStandardMaterial; color: THREE.Color }[] = [];
-  private parts = new Map<Part, { node: THREE.Object3D; axis: 'x' | 'y' | 'z'; angle: number; base: number; t: number; basePos: THREE.Vector3; hinge?: THREE.Vector3 }[]>();
+  private parts = new Map<Part, { node: THREE.Object3D; axis: 'x' | 'y' | 'z'; angle: number; base: number; t: number; basePos: THREE.Vector3; hinge?: THREE.Vector3; twin?: THREE.Object3D }[]>();
+  private roofTwin?: THREE.Mesh;
   private state: Record<Part, boolean> = { doors: false, hood: false, hatch: false };
   private lightsOn = false;
   private first = true;
@@ -136,13 +137,21 @@ export class Car {
       mat.toneMapped = false;
     }
 
+    // reflet sur le sol : copie inversée qui partage géométries et matériaux (aucune mémoire GPU en plus)
+    const mirror = model.clone();
+    const mirrorGroup = new THREE.Group();
+    mirrorGroup.scale.y = -1;
+    mirrorGroup.add(mirror);
+    this.stage.scene.add(mirrorGroup);
+    this.roofTwin = mirror.getObjectByName(this.roof.name) as THREE.Mesh | undefined;
+
     for (const [part, defs] of Object.entries(PART_NODES) as [Part, (typeof PART_NODES)[Part]][]) {
       this.parts.set(
         part,
         defs.flatMap((d) => {
           const node = model.getObjectByName(d.name);
           return node
-            ? [{ node, axis: d.axis, angle: d.angle, base: node.rotation[d.axis], t: 0, basePos: node.position.clone(), hinge: d.hinge && new THREE.Vector3(...d.hinge) }]
+            ? [{ node, axis: d.axis, angle: d.angle, base: node.rotation[d.axis], t: 0, basePos: node.position.clone(), hinge: d.hinge && new THREE.Vector3(...d.hinge), twin: mirror.getObjectByName(d.name) }]
             : [];
         })
       );
@@ -197,6 +206,7 @@ export class Car {
     if (glassRoof !== (this.roof.material === this.roofGlass)) {
       tl.call(() => {
         this.roof.material = glassRoof ? this.roofGlass : this.roofPaint;
+        if (this.roofTwin) this.roofTwin.material = this.roof.material;
       }, undefined, d * 0.5);
     }
     if (d === 0) tl.progress(1);
@@ -247,11 +257,16 @@ function tweenColor(tl: gsap.core.Timeline, color: THREE.Color, hex: string) {
 // Monogramme et nom de la marque, au format de la texture d'origine (512 × 128) : plaque, volant, jantes, étriers
 // Rotation autour d'une charnière : la position compense pour que le point de charnière reste immobile
 const _p = new THREE.Vector3();
-function setHinge(p: { node: THREE.Object3D; axis: 'x' | 'y' | 'z'; angle: number; base: number; t: number; basePos: THREE.Vector3; hinge?: THREE.Vector3 }) {
+function setHinge(p: { node: THREE.Object3D; axis: 'x' | 'y' | 'z'; angle: number; base: number; t: number; basePos: THREE.Vector3; hinge?: THREE.Vector3; twin?: THREE.Object3D }) {
   p.node.rotation[p.axis] = p.base + p.angle * p.t;
-  if (!p.hinge) return;
-  _p.copy(p.hinge).applyEuler(p.node.rotation);
-  p.node.position.copy(p.basePos).add(p.hinge).sub(_p);
+  if (p.hinge) {
+    _p.copy(p.hinge).applyEuler(p.node.rotation);
+    p.node.position.copy(p.basePos).add(p.hinge).sub(_p);
+  }
+  if (p.twin) {
+    p.twin.position.copy(p.node.position);
+    p.twin.rotation.copy(p.node.rotation);
+  }
 }
 
 function makeBrandTexture() {

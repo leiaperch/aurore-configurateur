@@ -1,8 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { HDRLoader } from 'three/examples/jsm/loaders/HDRLoader.js';
 
-// Scène de présentation : studio éclairé par une HDRI, ombre de contact précalculée, rendu à la demande.
+// Scène de présentation : studio de nuit généré en code, sol miroir, ombre de contact précalculée, rendu à la demande.
 // Rien n'est dessiné tant que rien ne bouge : un configurateur passe l'essentiel de son temps à attendre
 // un clic, le GPU n'a pas à tourner pendant ce temps.
 
@@ -28,7 +27,7 @@ export class Stage {
     this.renderer.setPixelRatio(this.maxDpr);
     // PBR Neutral (Khronos) : conçu pour le e-commerce, la teinte affichée reste fidèle à la couleur du nuancier
     this.renderer.toneMapping = THREE.NeutralToneMapping;
-    this.renderer.toneMappingExposure = 1;
+    this.renderer.toneMappingExposure = 1.14;
     this.renderer.setClearColor(0x000000, 0);
     host.appendChild(this.renderer.domElement);
 
@@ -56,15 +55,63 @@ export class Stage {
     this.renderer.setAnimationLoop(() => this.tick());
   }
 
-  async loadEnvironment(url: string) {
-    const hdr = await new HDRLoader().setDataType(THREE.HalfFloatType).loadAsync(url);
-    hdr.mapping = THREE.EquirectangularReflectionMapping;
+  // Studio construit en code puis converti en éclairage d'environnement (PMREM) : des bandes lumineuses
+  // dessinent les reflets sur la carrosserie. Aucune image HDR à télécharger, un seul calcul au chargement.
+  buildStudio() {
+    const room = new THREE.Scene();
+    const box = new THREE.Mesh(new THREE.BoxGeometry(30, 12, 30), new THREE.MeshBasicMaterial({ color: 0x030304, side: THREE.BackSide }));
+    box.position.y = 5;
+    room.add(box);
+    const strip = (w: number, h: number, color: THREE.ColorRepresentation, power: number, pos: [number, number, number], rot: [number, number, number]) => {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(power), side: THREE.DoubleSide }));
+      m.position.set(...pos);
+      m.rotation.set(...rot);
+      room.add(m);
+    };
+    // plafond : trois longues bandes dans l'axe de la voiture, lignes de lumière sur capot et toit
+    for (const x of [-2.4, 0, 2.4]) strip(0.45, 15, 0xffffff, x === 0 ? 16 : 9, [x, 5.6, 0], [Math.PI / 2, 0, 0]);
+    // côtés : panneaux verticaux qui soulignent les flancs
+    for (const side of [-1, 1]) {
+      strip(10, 0.5, 0xffffff, 8, [side * 8, 2.4, 0], [0, (side * Math.PI) / 2, 0]);
+      strip(10, 0.16, 0xffffff, 5, [side * 8, 0.85, 0], [0, (side * Math.PI) / 2, 0]);
+    }
+    // fond : lueur chaude « aurore » rasante, reprise dans les reflets bas
+    strip(16, 0.7, 0xff7a3d, 6, [0, 0.7, -10], [0, 0, 0]);
+    strip(12, 0.4, 0x9fb8ff, 3, [0, 3.2, 10], [0, Math.PI, 0]);
+
     const pmrem = new THREE.PMREMGenerator(this.renderer);
-    this.scene.environment = pmrem.fromEquirectangular(hdr).texture;
-    this.scene.environmentRotation.y = 1.2;
-    this.scene.environmentIntensity = 1.05;
-    hdr.dispose();
+    this.scene.environment = pmrem.fromScene(room, 0.035).texture;
+    this.scene.environmentIntensity = 1.15;
     pmrem.dispose();
+    room.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (m.isMesh) {
+        m.geometry.dispose();
+        (m.material as THREE.Material).dispose();
+      }
+    });
+
+    // sol : noir satiné qui s'efface vers les bords, le reflet de la voiture passe au travers
+    const floor = new THREE.Mesh(
+      new THREE.CircleGeometry(14, 96),
+      new THREE.ShaderMaterial({
+        transparent: true,
+        depthWrite: false,
+        uniforms: { uColor: { value: new THREE.Color(0x0a0b0d) } },
+        vertexShader: /* glsl */ `varying vec2 vP; void main(){ vP = position.xy; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+        fragmentShader: /* glsl */ `
+          uniform vec3 uColor; varying vec2 vP;
+          void main(){
+            float r = length(vP * vec2(1.0, 0.8));
+            float a = mix(0.62, 0.96, smoothstep(1.2, 5.5, r)) * (1.0 - smoothstep(6.0, 13.5, r));
+            gl_FragColor = vec4(uColor, a);
+            #include <colorspace_fragment>
+          }`,
+      })
+    );
+    floor.rotation.x = -Math.PI / 2;
+    floor.renderOrder = -2;
+    this.scene.add(floor);
     this.invalidate();
   }
 
@@ -96,6 +143,11 @@ export class Stage {
       this.animating--;
       this.invalidate();
     };
+  }
+
+  // vrai pendant la dernière image avant le repos : moment pour les calculs qu'on ne fait pas à chaque image
+  get settling() {
+    return this.animating === 0 && this.dirty <= 0;
   }
 
   each(fn: (dt: number) => void) {
