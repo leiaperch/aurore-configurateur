@@ -13,6 +13,7 @@ import {
   type Catalog,
   type Choice,
   type Config,
+  type Option,
   type SingleKey,
 } from './catalog';
 
@@ -28,6 +29,16 @@ const NEXT_LABEL: Record<Step, string> = {
   interior: 'Choisir les options',
   options: 'Voir la synthèse',
   summary: 'Réserver un essai',
+};
+
+// pictogrammes au trait, dessinés à la même grille que les icônes de la barre du bas
+const OPTION_ICONS: Record<string, string> = {
+  toit: '<svg viewBox="0 0 24 24"><path d="M3 15l4-7h10l4 7z"/><path d="M7.5 8.5 6 15M16.5 8.5 18 15M5.2 11.5h13.6"/></svg>',
+  audio: '<svg viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="M15.5 9.2a4 4 0 0 1 0 5.6M18 6.8a7.5 7.5 0 0 1 0 10.4"/></svg>',
+  pilotage: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 5.5A6.5 6.5 0 0 1 18.5 12M12 2.5A9.5 9.5 0 0 1 21.5 12"/><path d="M3 20h9"/></svg>',
+  hiver: '<svg viewBox="0 0 24 24"><path d="M12 3v18M4.2 7.5l15.6 9M19.8 7.5l-15.6 9"/><path d="m9.5 5 2.5 2.5L14.5 5M9.5 19l2.5-2.5 2.5 2.5"/></svg>',
+  attelage: '<svg viewBox="0 0 24 24"><path d="M4 8h9l3 4h4"/><circle cx="17" cy="16" r="3"/><path d="M6 8v5"/></svg>',
+  default: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg>',
 };
 
 const $ = <T extends HTMLElement>(sel: string, root: ParentNode = document) => root.querySelector<T>(sel)!;
@@ -204,34 +215,68 @@ export class Ui {
 
   private optionsStep() {
     const wrap = el('div', 'group');
-    wrap.innerHTML = `<p class="group-title">Options <span>${this.config.options.length} choisie${this.config.options.length > 1 ? 's' : ''}</span></p>`;
-    const list = el('div', 'options');
+    const trim = find(this.catalog.trims, this.config.trim);
+    const chosen = this.config.options.length;
+    const subtotal = this.config.options.reduce((sum, id) => sum + find(this.catalog.options, id).price, 0);
+    wrap.innerHTML = `<p class="group-title">Options <span>${chosen ? `${chosen} ajoutée${chosen > 1 ? 's' : ''}` : 'aucune ajoutée'}</span></p>`;
+
+    // regroupées par famille, dans l'ordre du catalogue
+    const groups = new Map<string, Option[]>();
     for (const option of this.catalog.options) {
-      const included = includedIn(this.catalog, option.id, this.config.trim);
-      const ok = availableOn(option, this.config.trim);
-      const checked = included || this.config.options.includes(option.id);
-      const row = el('label', `option${included ? ' included' : ''}${ok ? '' : ' disabled'}`);
-      const excludes = this.catalog.options.filter((o) => option.excludes?.includes(o.id) || o.excludes?.includes(option.id));
-      const noteText = !ok
-        ? `Disponible en ${this.trimNames(option.trims!)}`
-        : included
-          ? `De série en ${find(this.catalog.trims, this.config.trim).name}`
-          : excludes.length
-            ? `Incompatible avec : ${excludes.map((o) => o.name.toLowerCase()).join(', ')}`
-            : '';
-      row.innerHTML = `
-        <input type="checkbox" ${checked ? 'checked' : ''} ${included || !ok ? 'disabled' : ''} />
-        <span class="o-name">${option.name}${noteText ? `<span class="o-note">${noteText}</span>` : ''}</span>
-        <span class="o-price">${included ? 'De série' : `+ ${formatPrice(option.price)}`}</span>`;
-      const input = row.querySelector('input')!;
-      input.addEventListener('change', () => {
-        const others = this.config.options.filter((id) => id !== option.id);
-        this.set({ options: input.checked ? [...others, option.id] : others });
-      });
-      list.append(row);
+      if (!groups.has(option.group)) groups.set(option.group, []);
+      groups.get(option.group)!.push(option);
     }
-    wrap.append(list);
+
+    for (const [group, options] of groups) {
+      const section = el('section', 'opt-group');
+      section.innerHTML = `<h3 class="opt-group-title">${group}</h3>`;
+      for (const option of options) section.append(this.optionRow(option, trim.name));
+      wrap.append(section);
+    }
+
+    const foot = el('p', 'opt-subtotal');
+    foot.innerHTML = `<span>Sous-total options</span><strong>${subtotal ? formatPrice(subtotal) : '—'}</strong>`;
+    wrap.append(foot);
     return wrap;
+  }
+
+  private optionRow(option: Option, trimName: string) {
+    const included = includedIn(this.catalog, option.id, this.config.trim);
+    const ok = availableOn(option, this.config.trim);
+    const chosen = this.config.options.includes(option.id);
+    const conflicts = this.catalog.options.filter((o) => o.id !== option.id && (option.excludes?.includes(o.id) || o.excludes?.includes(option.id)));
+
+    const row = el('article', `option${included ? ' included' : ''}${ok ? '' : ' unavailable'}${chosen ? ' chosen' : ''}`);
+    const status = !ok
+      ? `Réservée aux versions ${this.trimNames(option.trims!)}`
+      : included
+        ? `De série sur ${trimName}`
+        : conflicts.length
+          ? `Ne peut pas être associée à ${conflicts.map((o) => o.name.toLowerCase()).join(', ')}`
+          : '';
+
+    row.innerHTML = `
+      <span class="o-icon" aria-hidden="true">${OPTION_ICONS[option.id] ?? OPTION_ICONS.default}</span>
+      <div class="o-text">
+        <h4>${option.name}${option.visual ? '<span class="o-flag">Visible en 3D</span>' : ''}</h4>
+        <p class="o-desc">${option.description}</p>
+        <p class="o-detail">${option.detail}</p>
+        ${status ? `<p class="o-status">${status}</p>` : ''}
+      </div>
+      <div class="o-side">
+        <span class="o-price">${included ? 'De série' : formatPrice(option.price)}</span>
+        ${
+          included || !ok
+            ? `<span class="o-locked">${included ? 'Incluse' : 'Indisponible'}</span>`
+            : `<button class="o-toggle" aria-pressed="${chosen}">${chosen ? 'Retirer' : 'Ajouter'}</button>`
+        }
+      </div>`;
+
+    row.querySelector('.o-toggle')?.addEventListener('click', () => {
+      const others = this.config.options.filter((id) => id !== option.id);
+      this.set({ options: chosen ? others : [...others, option.id] });
+    });
+    return row;
   }
 
   private summaryStep() {

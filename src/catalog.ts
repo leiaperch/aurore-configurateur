@@ -36,6 +36,9 @@ export interface Wheel extends Choice {
 export interface Option extends Choice {
   visual?: boolean;
   excludes?: string[];
+  group: string;
+  description: string;
+  detail: string;
 }
 
 export interface Catalog {
