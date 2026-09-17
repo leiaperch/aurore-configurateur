@@ -1,0 +1,66 @@
+{
+  "brand": "Norvane",
+  "model": "Aurore",
+  "currency": "EUR",
+  "basePrice": 58900,
+  "financing": { "months": 48, "deposit": 6000, "rate": 0.049, "residual": 0.42 },
+  "trims": [
+    {
+      "id": "essentielle",
+      "name": "Essentielle",
+      "price": 0,
+      "tagline": "Propulsion, batterie 77 kWh",
+      "specs": { "autonomie": "520 km", "zeroCent": "6,4 s", "puissance": "210 kW" },
+      "accent": "body"
+    },
+    {
+      "id": "gt",
+      "name": "GT",
+      "price": 7400,
+      "tagline": "Transmission intégrale, suspension pilotée",
+      "specs": { "autonomie": "495 km", "zeroCent": "4,6 s", "puissance": "290 kW" },
+      "accent": "gloss-black"
+    },
+    {
+      "id": "signature",
+      "name": "Signature",
+      "price": 13900,
+      "tagline": "Intégrale, batterie 92 kWh, finitions graphite",
+      "specs": { "autonomie": "610 km", "zeroCent": "4,2 s", "puissance": "320 kW" },
+      "accent": "graphite",
+      "includes": ["toit", "audio"]
+    }
+  ],
+  "paints": [
+    { "id": "glacier", "name": "Blanc Glacier", "finish": "Nacré", "hex": "#ecebe6", "price": 0, "metalness": 0.15, "roughness": 0.32, "clearcoat": 1, "iridescence": 0.35, "flakes": 0.05 },
+    { "id": "obsidienne", "name": "Noir Obsidienne", "finish": "Métallisé", "hex": "#101113", "price": 1200, "metalness": 0.7, "roughness": 0.3, "clearcoat": 1, "iridescence": 0, "flakes": 0.3 },
+    { "id": "carmin", "name": "Rouge Carmin", "finish": "Candy", "hex": "#b3000a", "price": 2400, "metalness": 1, "roughness": 0.25, "clearcoat": 1, "iridescence": 0, "flakes": 0.3 },
+    { "id": "abysse", "name": "Bleu Abysse", "finish": "Métallisé", "hex": "#14304f", "price": 1200, "metalness": 0.85, "roughness": 0.3, "clearcoat": 1, "iridescence": 0, "flakes": 0.3 },
+    { "id": "lichen", "name": "Vert Lichen", "finish": "Métallisé", "hex": "#57634d", "price": 1200, "metalness": 0.6, "roughness": 0.34, "clearcoat": 1, "iridescence": 0, "flakes": 0.25 },
+    { "id": "sable", "name": "Sable Doré", "finish": "Métallisé", "hex": "#b49c76", "price": 1200, "metalness": 0.8, "roughness": 0.3, "clearcoat": 1, "iridescence": 0, "flakes": 0.25 },
+    { "id": "graphite", "name": "Graphite Mat", "finish": "Mat", "hex": "#45484b", "price": 3100, "metalness": 0.45, "roughness": 0.62, "clearcoat": 0, "iridescence": 0, "flakes": 0.1, "trims": ["gt", "signature"] }
+  ],
+  "wheels": [
+    { "id": "argent", "name": "Aéro 20\" argent usiné", "hex": "#c9cbcd", "price": 0, "spokes": "#c9cbcd", "metalness": 1, "roughness": 0.18 },
+    { "id": "noir", "name": "Aéro 20\" noir satiné", "hex": "#1b1c1e", "price": 900, "spokes": "#1b1c1e", "metalness": 0.5, "roughness": 0.45 },
+    { "id": "bronze", "name": "Sport 21\" bronze", "hex": "#6d5537", "price": 1600, "spokes": "#6d5537", "metalness": 1, "roughness": 0.3, "trims": ["gt", "signature"] }
+  ],
+  "calipers": [
+    { "id": "anthracite", "name": "Anthracite", "hex": "#2b2d30", "price": 0 },
+    { "id": "rouge", "name": "Rouge", "hex": "#a3141b", "price": 450 },
+    { "id": "jaune", "name": "Jaune", "hex": "#d8a31a", "price": 450, "trims": ["gt", "signature"] }
+  ],
+  "interiors": [
+    { "id": "carbone", "name": "Tissu recyclé Carbone", "hex": "#26282b", "price": 0 },
+    { "id": "perle", "name": "Cuir végétal Perle", "hex": "#dcd6cb", "price": 1500 },
+    { "id": "cognac", "name": "Cuir végétal Cognac", "hex": "#7a3f1f", "price": 1500 },
+    { "id": "carmin", "name": "Alcantara Carmin", "hex": "#6e0d12", "price": 1900, "trims": ["gt", "signature"] }
+  ],
+  "options": [
+    { "id": "toit", "name": "Toit panoramique teinté", "price": 1600, "visual": true },
+    { "id": "audio", "name": "Audio 14 haut-parleurs", "price": 1100 },
+    { "id": "pilotage", "name": "Aide à la conduite avancée", "price": 1900, "trims": ["gt", "signature"] },
+    { "id": "hiver", "name": "Pack hiver : pompe à chaleur, sièges chauffants", "price": 850 },
+    { "id": "attelage", "name": "Attelage escamotable 1 600 kg", "price": 950, "excludes": ["pilotage"] }
+  ]
+}
