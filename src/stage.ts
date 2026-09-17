@@ -27,7 +27,7 @@ export class Stage {
     this.renderer.setPixelRatio(this.maxDpr);
     // PBR Neutral (Khronos) : conçu pour le e-commerce, la teinte affichée reste fidèle à la couleur du nuancier
     this.renderer.toneMapping = THREE.NeutralToneMapping;
-    this.renderer.toneMappingExposure = 1.14;
+    this.renderer.toneMappingExposure = 1;
     this.renderer.setClearColor(0x000000, 0);
     host.appendChild(this.renderer.domElement);
 
@@ -57,31 +57,29 @@ export class Stage {
 
   // Studio construit en code puis converti en éclairage d'environnement (PMREM) : des bandes lumineuses
   // dessinent les reflets sur la carrosserie. Aucune image HDR à télécharger, un seul calcul au chargement.
+  // Studio photo : un cyclorama clair et quelques sources larges, converti une fois en éclairage
+  // d'environnement (PMREM). C'est l'éclairage d'un shooting automobile, sans image HDR à télécharger.
   buildStudio() {
     const room = new THREE.Scene();
-    const box = new THREE.Mesh(new THREE.BoxGeometry(30, 12, 30), new THREE.MeshBasicMaterial({ color: 0x030304, side: THREE.BackSide }));
-    box.position.y = 5;
-    room.add(box);
-    const strip = (w: number, h: number, color: THREE.ColorRepresentation, power: number, pos: [number, number, number], rot: [number, number, number]) => {
+    const shell = new THREE.Mesh(new THREE.BoxGeometry(34, 14, 34), new THREE.MeshBasicMaterial({ color: 0xbfc0c2, side: THREE.BackSide }));
+    shell.position.y = 6;
+    room.add(shell);
+    const panel = (w: number, h: number, power: number, pos: [number, number, number], rot: [number, number, number], color = 0xffffff) => {
       const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(power), side: THREE.DoubleSide }));
       m.position.set(...pos);
       m.rotation.set(...rot);
       room.add(m);
     };
-    // plafond : trois longues bandes dans l'axe de la voiture, lignes de lumière sur capot et toit
-    for (const x of [-2.4, 0, 2.4]) strip(0.45, 15, 0xffffff, x === 0 ? 16 : 9, [x, 5.6, 0], [Math.PI / 2, 0, 0]);
-    // côtés : panneaux verticaux qui soulignent les flancs
-    for (const side of [-1, 1]) {
-      strip(10, 0.5, 0xffffff, 8, [side * 8, 2.4, 0], [0, (side * Math.PI) / 2, 0]);
-      strip(10, 0.16, 0xffffff, 5, [side * 8, 0.85, 0], [0, (side * Math.PI) / 2, 0]);
-    }
-    // fond : lueur chaude « aurore » rasante, reprise dans les reflets bas
-    strip(16, 0.7, 0xff7a3d, 6, [0, 0.7, -10], [0, 0, 0]);
-    strip(12, 0.4, 0x9fb8ff, 3, [0, 3.2, 10], [0, Math.PI, 0]);
+    // grande boîte à lumière au plafond, deux panneaux latéraux, un contre-jour derrière
+    panel(9, 16, 5, [0, 6.6, 0], [Math.PI / 2, 0, 0]);
+    for (const side of [-1, 1]) panel(12, 6, 2.2, [side * 8.5, 3, 0], [0, (side * Math.PI) / 2, 0]);
+    panel(14, 5, 1.6, [0, 2.6, -11], [0, 0, 0]);
+    // deux filés étroits pour marquer les arêtes de la carrosserie
+    for (const x of [-2.6, 2.6]) panel(0.5, 14, 9, [x, 5.4, 0], [Math.PI / 2, 0, 0]);
 
     const pmrem = new THREE.PMREMGenerator(this.renderer);
-    this.scene.environment = pmrem.fromScene(room, 0.035).texture;
-    this.scene.environmentIntensity = 1.15;
+    this.scene.environment = pmrem.fromScene(room, 0.03).texture;
+    this.scene.environmentIntensity = 1;
     pmrem.dispose();
     room.traverse((o) => {
       const m = o as THREE.Mesh;
@@ -91,19 +89,19 @@ export class Stage {
       }
     });
 
-    // sol : noir satiné qui s'efface vers les bords, le reflet de la voiture passe au travers
+    // sol : gris clair, légèrement réfléchissant sous la voiture, qui se fond dans la page sur les bords
     const floor = new THREE.Mesh(
       new THREE.CircleGeometry(14, 96),
       new THREE.ShaderMaterial({
         transparent: true,
         depthWrite: false,
-        uniforms: { uColor: { value: new THREE.Color(0x0a0b0d) } },
+        uniforms: { uColor: { value: new THREE.Color(0xe9e8e5) } },
         vertexShader: /* glsl */ `varying vec2 vP; void main(){ vP = position.xy; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
         fragmentShader: /* glsl */ `
           uniform vec3 uColor; varying vec2 vP;
           void main(){
             float r = length(vP * vec2(1.0, 0.8));
-            float a = mix(0.62, 0.96, smoothstep(1.2, 5.5, r)) * (1.0 - smoothstep(6.0, 13.5, r));
+            float a = mix(0.93, 0.995, smoothstep(1.0, 5.0, r)) * (1.0 - smoothstep(6.0, 13.5, r));
             gl_FragColor = vec4(uColor, a);
             #include <colorspace_fragment>
           }`,
@@ -262,14 +260,14 @@ class ContactShadow {
     this.quadScene.add(this.quad);
 
     const planeMat = new THREE.ShaderMaterial({
-      uniforms: { tShadow: { value: this.rt.texture }, uOpacity: { value: 0.92 } },
+      uniforms: { tShadow: { value: this.rt.texture }, uOpacity: { value: 0.55 } },
       vertexShader: /* glsl */ `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
       fragmentShader: /* glsl */ `
         uniform sampler2D tShadow; uniform float uOpacity; varying vec2 vUv;
         void main(){
           float a = texture2D(tShadow, vec2(vUv.x, 1.0 - vUv.y)).a;
           float edge = smoothstep(0.5, 0.36, length(vUv - 0.5));
-          gl_FragColor = vec4(vec3(0.02, 0.02, 0.025), a * uOpacity * edge);
+          gl_FragColor = vec4(vec3(0.16, 0.16, 0.17), a * uOpacity * edge);
         }`,
       transparent: true,
       depthWrite: false,

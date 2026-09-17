@@ -5,29 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Aurore · Configurateur 3D, étude de cas</title>
     <meta name="description" content="Étude de cas : configurateur 3D temps réel pour un véhicule électrique (marque fictive Norvane). Three.js, TypeScript, GSAP." />
-    <meta name="theme-color" content="#07080a" />
+    <meta name="theme-color" content="#f2f1ee" />
     <meta property="og:title" content="Aurore · Configurateur 3D, étude de cas" />
     <meta property="og:description" content="Teintes, jantes, intérieur et options en 3D temps réel, règles de catalogue, prix et lien partageable." />
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%2307080a'/><path d='M9 23V9l14 14V9' stroke='%23ff7a3d' stroke-width='2.6' fill='none'/></svg>" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='2' fill='%2317171a'/><path d='M9 23V9l14 14V9' stroke='%23f2f1ee' stroke-width='2.6' fill='none'/></svg>" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&display=swap" rel="stylesheet" />
     <link rel="preload" href="models/aurore.glb" as="fetch" crossorigin />
   </head>
   <body>
     <a class="skip" href="#etude">Aller à l'étude de cas</a>
 
     <section class="config" id="configurateur" aria-label="Configurateur Norvane Aurore">
-      <div class="backdrop" aria-hidden="true">
-        <div class="glow"></div>
-        <div class="bigword">Aurore</div>
-        <div class="horizon"></div>
-      </div>
-
       <div class="viewport" id="viewport">
-        <div class="callouts" id="callouts" aria-hidden="true"></div>
         <div class="loader" id="loader" role="status" aria-live="polite">
-          <p class="loader-kicker">Norvane · Studio</p>
           <div class="loader-name">Aurore</div>
           <div class="loader-bar"><i id="loader-bar"></i></div>
           <p class="loader-text" id="loader-text">Chargement du modèle 3D</p>
@@ -47,7 +39,7 @@
           <button data-view="interieur">Habitacle</button>
         </div>
         <nav class="topnav">
-          <span class="demo-tag"><i></i>Démo, marque fictive</span>
+          <span class="demo-tag">Démonstration, marque fictive</span>
           <a href="#etude" class="link-arrow">Étude de cas <span aria-hidden="true">↓</span></a>
         </nav>
       </header>
@@ -64,10 +56,18 @@
       <aside class="panel" id="panel" aria-label="Choix de configuration">
         <div class="panel-head">
           <p class="eyebrow" id="trim-tagline">Propulsion, batterie 77 kWh</p>
-          <h1><span class="model">Aurore</span> <em id="trim-name">Essentielle</em></h1>
+          <h1><span class="model">Aurore</span> <span id="trim-name">Essentielle</span></h1>
           <dl class="specs" id="specs"></dl>
         </div>
         <div class="step-body" id="step-body" role="tabpanel"></div>
+        <footer class="panel-foot">
+          <div class="price">
+            <span class="price-label">Prix TTC</span>
+            <strong id="price-total">58 900 €</strong>
+            <span class="price-monthly" id="price-monthly">ou 0 €/mois*</span>
+          </div>
+          <button class="cta" id="next">Suivant</button>
+        </footer>
       </aside>
 
       <div class="dock">
@@ -77,13 +77,7 @@
           <button data-part="hatch" aria-pressed="false" title="Coffre"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15l-6-6H5l-2 6z M3 15h18" /></svg><span>Coffre</span></button>
           <button data-lights aria-pressed="false" title="Feux"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6c-4 0-6 3-6 6s2 6 6 6h2V6z M15 8h6 M15 12h6 M15 16h6" /></svg><span>Feux</span></button>
         </div>
-        <p class="hint" id="hint"><span class="kbd">Glisser</span> tourner <span class="kbd">Molette</span> zoomer</p>
-        <div class="price">
-          <span class="price-label">Prix TTC</span>
-          <strong id="price-total">58 900 €</strong>
-          <span class="price-monthly" id="price-monthly">ou 0 €/mois*</span>
-        </div>
-        <button class="cta" id="next">Suivant</button>
+        <p class="hint" id="hint">Glisser pour tourner, molette pour zoomer</p>
       </div>
 
       <div class="toasts" id="toasts" aria-live="polite"></div>
@@ -91,8 +85,8 @@
 
     <main class="case" id="etude">
       <section class="case-hero">
-        <p class="eyebrow"><span class="dot"></span>Étude de cas · Configurateur 3D temps réel</p>
-        <h2>Voir <em>exactement</em> la voiture qu'on commande, avec son prix, avant de la commander.</h2>
+        <p class="eyebrow">Étude de cas — Configurateur 3D temps réel</p>
+        <h2>Voir la voiture qu'on commande, avec son prix, avant de la commander.</h2>
         <dl class="facts">
           <div><dt>Client</dt><dd>Norvane, constructeur électrique fictif</dd></div>
           <div><dt>Rôle</dt><dd>Développement front-end 3D, intégration, direction artistique</dd></div>
@@ -126,7 +120,7 @@
         <header class="block-head"><span class="num">03</span><h3>Choix techniques</h3></header>
         <div class="decisions">
           <article>
-            <p class="fig">11,8 <span>→</span> 2,6 <small>Mo</small></p>
+            <p class="fig">11,8 → 2,6 <small>Mo</small></p>
             <div><h4>Un modèle allégé pour le web</h4><p>Géométrie compressée avec meshopt, textures en WebP plafonnées à 1024 px, via gltf-transform.</p></div>
           </article>
           <article>
@@ -135,10 +129,10 @@
           </article>
           <article>
             <p class="fig">0 <small>Mo d'HDRI</small></p>
-            <div><h4>Un studio écrit en code</h4><p>Les bandes lumineuses qui dessinent les reflets sont une petite scène convertie une fois en éclairage d'environnement. Rien à télécharger, et chaque reflet se règle comme un projecteur.</p></div>
+            <div><h4>Un studio écrit en code</h4><p>Le cyclorama et les boîtes à lumière qui dessinent les reflets sont une petite scène convertie une fois en éclairage d'environnement. Rien à télécharger, et chaque source se règle comme un projecteur de studio.</p></div>
           </article>
           <article>
-            <p class="fig">PBR <em>Neutral</em></p>
+            <p class="fig">PBR Neutral</p>
             <div><h4>Des couleurs fidèles au nuancier</h4><p>Le tone mapping Khronos PBR Neutral a été conçu pour le commerce en ligne : il garde la teinte de base. Chaque teinte règle aussi métal, rugosité, vernis et iridescence.</p></div>
           </article>
           <article>
@@ -146,7 +140,7 @@
             <div><h4>Changer de teinte sans saccade</h4><p>Toute la carrosserie partage un matériau. Une nouvelle teinte interpole quelques valeurs, sans téléchargement ni recompilation de shader. Le reflet au sol réutilise les mêmes géométries et matériaux.</p></div>
           </article>
           <article>
-            <p class="fig">catalog<em>.json</em></p>
+            <p class="fig">catalog.json</p>
             <div><h4>Les règles dans les données</h4><p>Prix, disponibilités par version, options de série et incompatibilités sont dans un fichier JSON qu'une API ou un back-office peut fournir. Quand une règle modifie un choix, un message dit pourquoi.</p></div>
           </article>
         </div>
@@ -173,8 +167,8 @@
       </section>
 
       <section class="case-contact">
-        <p class="eyebrow"><span class="dot"></span>Leia Percherancier · Développeuse front-end 3D</p>
-        <h2>Un configurateur ou une page produit en 3D <em>à construire</em> ?</h2>
+        <p class="eyebrow">Leia Percherancier — Développeuse front-end 3D</p>
+        <h2>Un configurateur ou une page produit en 3D à construire ?</h2>
         <div class="contact-links">
           <a class="cta" href="https://www.malt.fr/profile/leiapercherancier" target="_blank" rel="noopener">Me contacter sur Malt</a>
           <a class="link-arrow" href="#configurateur">Revenir au configurateur <span aria-hidden="true">↑</span></a>
@@ -189,7 +183,6 @@
 
     <dialog class="modal" id="booking">
       <form method="dialog" id="booking-form">
-        <p class="eyebrow"><span class="dot"></span>Essai</p>
         <h3>Réserver un essai</h3>
         <p class="modal-config" id="booking-config"></p>
         <label>Nom <input name="nom" autocomplete="name" required /></label>

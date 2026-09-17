@@ -4,16 +4,6 @@ import { Stage } from './stage';
 import { Car, type Part } from './car';
 import { Views, type ViewId } from './views';
 import { Ui, toast, type Step } from './ui';
-import { Callouts, type CalloutDef } from './callouts';
-import { find } from './catalog';
-
-// repères accrochés à la voiture : où se pose le point, et dans quels plans on les montre
-const CALLOUTS: CalloutDef[] = [
-  { id: 'batterie', anchor: 'doorL', offset: [0.12, -0.18, 0.1], views: ['trois-quarts', 'profil'], side: 1 },
-  { id: 'jantes', anchor: 'wheel', offset: [0.1, 0.12, 0], views: ['trois-quarts', 'profil', 'jantes'], side: -1 },
-  { id: 'phares', anchor: 'lights', offset: [0.2, 0.02, 0.06], views: ['profil'], side: -1 },
-  { id: 'chrono', anchor: 'rear', offset: [0, 0.06, -0.05], views: ['arriere'], side: 1 },
-];
 
 const STEP_VIEW: Partial<Record<Step, ViewId>> = {
   trim: 'trois-quarts',
@@ -38,14 +28,6 @@ async function boot() {
   await car.load('models/aurore.glb', (p) => progress(p * 0.9));
   car.apply(catalog, config);
 
-  const callouts = new Callouts(document.querySelector('#callouts')!, stage, car, CALLOUTS);
-  const refreshCallouts = (c = ui.config) => {
-    const trim = find(catalog.trims, c.trim);
-    callouts.set('batterie', 'Batterie', trim.specs.autonomie);
-    callouts.set('jantes', 'Jantes', find(catalog.wheels, c.wheels).name.replace('Aéro ', '').replace('Sport ', ''));
-    callouts.set('phares', 'Signature', 'Feux à LED matriciels');
-    callouts.set('chrono', '0 à 100 km/h', trim.specs.zeroCent);
-  };
 
   const views = new Views(stage, car);
   views.go('trois-quarts', true);
@@ -58,19 +40,16 @@ async function boot() {
   const setView = (id: ViewId) => {
     if (id === 'interieur' && !car.isOpen('doors')) setPart('doors', true);
     views.go(id);
-    callouts.setView(id);
     document.querySelectorAll<HTMLButtonElement>('[data-view]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === id)));
   };
   const setPart = (part: Part, open?: boolean) => {
     const state = car.toggle(part, open);
-    setTimeout(() => callouts.measure(), 1400);
     document.querySelector(`[data-part="${part}"]`)?.setAttribute('aria-pressed', String(state));
   };
 
   const ui = new Ui(catalog, config, {
     onChange: (next) => {
       car.apply(catalog, next);
-      refreshCallouts(next);
       history.replaceState(null, '', `?c=${encodeConfig(next)}${location.hash}`);
     },
     onStep: (step) => {
@@ -79,7 +58,6 @@ async function boot() {
       if (step !== 'interior' && views.current !== 'interieur' && car.isOpen('doors')) setPart('doors', false);
     },
   });
-  refreshCallouts(config);
 
   document.querySelectorAll<HTMLButtonElement>('[data-view]').forEach((b) => b.addEventListener('click', () => setView(b.dataset.view as ViewId)));
   document.querySelectorAll<HTMLButtonElement>('[data-part]').forEach((b) => b.addEventListener('click', () => setPart(b.dataset.part as Part)));
