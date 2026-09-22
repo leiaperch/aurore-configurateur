@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Aurore · Configurateur 3D, étude de cas</title>
+    <meta name="description" content="Étude de cas : configurateur 3D temps réel pour un véhicule électrique (marque fictive Norvane). Three.js, TypeScript, GSAP." />
+    <meta name="theme-color" content="#f2f1ee" />
+    <meta property="og:title" content="Aurore · Configurateur 3D, étude de cas" />
+    <meta property="og:description" content="Teintes, jantes, intérieur et options en 3D temps réel, règles de catalogue, prix et lien partageable." />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='2' fill='%2317171a'/><path d='M9 23V9l14 14V9' stroke='%23f2f1ee' stroke-width='2.6' fill='none'/></svg>" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="preload" href="models/aurore.glb" as="fetch" crossorigin />
+    <script type="module" crossorigin src="./assets/index-SuvPa22V.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-CudAJ499.css">
+  </head>
+  <body>
+    <a class="skip" href="#etude">Aller à l'étude de cas</a>
+
+    <section class="config" id="configurateur" aria-label="Configurateur Norvane Aurore">
+      <div class="viewport" id="viewport">
+        <div class="loader" id="loader" role="status" aria-live="polite">
+          <div class="loader-name">Aurore</div>
+          <div class="loader-bar"><i id="loader-bar"></i></div>
+          <p class="loader-text" id="loader-text">Chargement du modèle 3D</p>
+        </div>
+      </div>
+
+      <header class="topbar">
+        <a class="brand" href="#configurateur" aria-label="Norvane, accueil">
+          <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 24V8l16 16V8" /></svg>
+          <span>NORVANE</span>
+        </a>
+        <div class="views" role="group" aria-label="Points de vue">
+          <button data-view="trois-quarts" aria-pressed="true">3/4</button>
+          <button data-view="profil">Profil</button>
+          <button data-view="arriere">Arrière</button>
+          <button data-view="jantes">Roue</button>
+          <button data-view="interieur">Habitacle</button>
+        </div>
+        <nav class="topnav">
+          <span class="demo-tag">Démonstration, marque fictive</span>
+          <button class="theme-toggle" data-theme-toggle aria-pressed="false" aria-label="Passer en thème sombre">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>
+            <span class="theme-label">Sombre</span>
+          </button>
+          <a href="#etude" class="link-arrow">Étude de cas <span aria-hidden="true">↓</span></a>
+        </nav>
+      </header>
+
+      <nav class="steps" role="tablist" aria-label="Étapes de configuration">
+        <button role="tab" data-step="trim" aria-selected="true"><span class="n">01</span><span class="t">Version</span></button>
+        <button role="tab" data-step="paint"><span class="n">02</span><span class="t">Teinte</span></button>
+        <button role="tab" data-step="wheels"><span class="n">03</span><span class="t">Jantes</span></button>
+        <button role="tab" data-step="interior"><span class="n">04</span><span class="t">Intérieur</span></button>
+        <button role="tab" data-step="options"><span class="n">05</span><span class="t">Options</span></button>
+        <button role="tab" data-step="summary"><span class="n">06</span><span class="t">Synthèse</span></button>
+      </nav>
+
+      <aside class="panel" id="panel" aria-label="Choix de configuration">
+        <div class="panel-head">
+          <p class="eyebrow" id="trim-tagline">Propulsion, batterie 77 kWh</p>
+          <h1><span class="model">Aurore</span> <span id="trim-name">Essentielle</span></h1>
+          <dl class="specs" id="specs"></dl>
+        </div>
+        <div class="step-body" id="step-body" role="tabpanel"></div>
+        <footer class="panel-foot">
+          <div class="price">
+            <span class="price-label">Prix TTC</span>
+            <strong id="price-total">58 900 €</strong>
+            <span class="price-monthly" id="price-monthly">ou 0 €/mois*</span>
+          </div>
+          <button class="cta" id="next">Suivant</button>
+        </footer>
+      </aside>
+
+      <div class="dock">
+        <div class="actions" role="group" aria-label="Animations">
+          <button data-part="doors" aria-pressed="false" title="Portes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V6l7-3h7v17z M15 12h2" /></svg><span>Portes</span></button>
+          <button data-part="hood" aria-pressed="false" title="Capot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 15l6-6h10l2 6z M3 15h18" /></svg><span>Capot</span></button>
+          <button data-part="hatch" aria-pressed="false" title="Coffre"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15l-6-6H5l-2 6z M3 15h18" /></svg><span>Coffre</span></button>
+          <button data-lights aria-pressed="false" title="Feux"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6c-4 0-6 3-6 6s2 6 6 6h2V6z M15 8h6 M15 12h6 M15 16h6" /></svg><span>Feux</span></button>
+        </div>
+        <p class="hint" id="hint">Glisser pour tourner, molette pour zoomer</p>
+      </div>
+
+      <div class="toasts" id="toasts" aria-live="polite"></div>
+    </section>
+
+    <main class="case" id="etude">
+      <section class="case-hero">
+        <p class="eyebrow">Étude de cas — Configurateur 3D temps réel</p>
+        <h2>Voir la voiture qu'on commande, avec son prix, avant de la commander.</h2>
+        <dl class="facts">
+          <div><dt>Client</dt><dd>Norvane, constructeur électrique fictif</dd></div>
+          <div><dt>Rôle</dt><dd>Développement front-end 3D, intégration, direction artistique</dd></div>
+          <div><dt>Stack</dt><dd>Three.js, TypeScript, GSAP, Vite</dd></div>
+          <div><dt>Livrables</dt><dd>Configurateur web, catalogue JSON, lien partageable</dd></div>
+        </dl>
+        <p class="disclaimer">Projet réalisé pour démontrer une méthode de travail. La marque, les prix et les caractéristiques sont inventés, le brief est un scénario type.</p>
+      </section>
+
+      <section class="case-block">
+        <header class="block-head"><span class="num">01</span><h3>Le brief</h3></header>
+        <div class="prose">
+          <p class="lead">Norvane lance l'Aurore, une berline électrique vendue surtout en ligne. Les acheteurs comparaient teintes et jantes sur des photos retouchées, puis découvraient la voiture en concession.</p>
+          <p>L'équipe marketing voulait un configurateur où la voiture affichée est celle qui sera livrée. Trois contraintes ont guidé le projet : la teinte à l'écran correspond au nuancier, la page reste fluide sur un portable sans carte graphique dédiée, et les règles commerciales (options réservées à une version, équipements de série, incompatibilités) sont décrites dans les données, modifiables sans toucher au code.</p>
+        </div>
+      </section>
+
+      <section class="case-block">
+        <header class="block-head"><span class="num">02</span><h3>Le parcours</h3></header>
+        <ol class="journey">
+          <li><strong>Version</strong><span>Autonomie, 0 à 100 km/h et puissance. La version filtre les choix suivants.</span></li>
+          <li><strong>Teinte</strong><span>Nacré, métallisé, candy, mat : le vernis et les paillettes changent avec la couleur.</span></li>
+          <li><strong>Jantes et étriers</strong><span>La caméra descend sur la roue avant.</span></li>
+          <li><strong>Intérieur</strong><span>Les portes s'ouvrent, la caméra passe par l'ouverture et s'installe au volant.</span></li>
+          <li><strong>Options</strong><span>Options de série selon la version, incompatibilités expliquées.</span></li>
+          <li><strong>Synthèse</strong><span>Prix détaillé, mensualité, lien qui rouvre la configuration, demande d'essai.</span></li>
+        </ol>
+      </section>
+
+      <section class="case-block">
+        <header class="block-head"><span class="num">03</span><h3>Choix techniques</h3></header>
+        <div class="decisions">
+          <article>
+            <p class="fig">11,8 → 2,6 <small>Mo</small></p>
+            <div><h4>Un modèle allégé pour le web</h4><p>Géométrie compressée avec meshopt, textures en WebP plafonnées à 1024 px, via gltf-transform.</p></div>
+          </article>
+          <article>
+            <p class="fig">0 <small>image/s au repos</small></p>
+            <div><h4>Rendu à la demande</h4><p>La scène se redessine seulement quand quelque chose bouge : caméra, transition de teinte, porte. Voiture immobile, le GPU ne travaille pas et le portable reste silencieux.</p></div>
+          </article>
+          <article>
+            <p class="fig">0 <small>Mo d'HDRI</small></p>
+            <div><h4>Un studio écrit en code</h4><p>Le cyclorama et les boîtes à lumière qui dessinent les reflets sont une petite scène convertie une fois en éclairage d'environnement. Rien à télécharger, et chaque source se règle comme un projecteur de studio.</p></div>
+          </article>
+          <article>
+            <p class="fig">PBR Neutral</p>
+            <div><h4>Des couleurs fidèles au nuancier</h4><p>Le tone mapping Khronos PBR Neutral a été conçu pour le commerce en ligne : il garde la teinte de base. Chaque teinte règle aussi métal, rugosité, vernis et iridescence.</p></div>
+          </article>
+          <article>
+            <p class="fig">1 <small>matériau carrosserie</small></p>
+            <div><h4>Changer de teinte sans saccade</h4><p>Toute la carrosserie partage un matériau. Une nouvelle teinte interpole quelques valeurs, sans téléchargement ni recompilation de shader. Le reflet au sol réutilise les mêmes géométries et matériaux.</p></div>
+          </article>
+          <article>
+            <p class="fig">catalog.json</p>
+            <div><h4>Les règles dans les données</h4><p>Prix, disponibilités par version, options de série et incompatibilités sont dans un fichier JSON qu'une API ou un back-office peut fournir. Quand une règle modifie un choix, un message dit pourquoi.</p></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="case-block">
+        <header class="block-head"><span class="num">04</span><h3>Mesures en direct</h3></header>
+        <div class="prose"><p>Relevées par le moteur de rendu de cette page, dans votre navigateur, depuis son ouverture. Faites tourner la voiture en haut de page puis revenez : le compteur d'images n'avance que pendant les mouvements.</p></div>
+        <div class="metrics" id="metrics">
+          <div><span class="m-value" data-live="frames">–</span><span class="m-label">images calculées</span></div>
+          <div><span class="m-value" data-live="idle">–</span><span class="m-label">du temps sans rendu</span></div>
+          <div><span class="m-value" data-live="calls">–</span><span class="m-label">appels de dessin par image</span></div>
+          <div><span class="m-value" data-live="triangles">–</span><span class="m-label">triangles, reflet compris</span></div>
+          <div><span class="m-value" data-live="dpr">–</span><span class="m-label">densité de pixels adaptative</span></div>
+        </div>
+      </section>
+
+      <section class="case-block">
+        <header class="block-head"><span class="num">05</span><h3>Ce que ça montre</h3></header>
+        <div class="prose">
+          <p class="lead">Un configurateur se joue sur le premier affichage, la réponse à chaque clic et la confiance au moment du prix.</p>
+          <p>Ici le modèle s'affiche une fois ses matériaux compilés, chaque choix répond en moins d'une seconde avec une transition, et la synthèse détaille chaque ligne avec un lien qui restaure la configuration. La même base sert pour tout produit configurable : mobilier, montres, vélos, cuisines. On change le modèle et le catalogue.</p>
+        </div>
+      </section>
+
+      <section class="case-contact">
+        <p class="eyebrow">Leia Percherancier — Développeuse front-end 3D</p>
+        <h2>Un configurateur ou une page produit en 3D à construire ?</h2>
+        <div class="contact-links">
+          <a class="cta" href="https://www.malt.fr/profile/leiapercherancier" target="_blank" rel="noopener">Me contacter sur Malt</a>
+          <a class="link-arrow" href="#configurateur">Revenir au configurateur <span aria-hidden="true">↑</span></a>
+        </div>
+      </section>
+
+      <footer class="credits">
+        <p>Modèle 3D : « Car Concept » par Eric Chadwick, Darmstadt Graphics Group, <a href="https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/CarConcept" target="_blank" rel="noopener">Khronos glTF Sample Assets</a>, licence <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>, d'après un modèle CC0 de Unity Fan. Logos d'origine remplacés, matériaux, charnières et studio refaits pour le configurateur.</p>
+        <p>Mensualité : location avec option d'achat sur 48 mois, apport 6 000 €, calcul indicatif sans valeur contractuelle.</p>
+      </footer>
+    </main>
+
+    <dialog class="modal" id="booking">
+      <form method="dialog" id="booking-form">
+        <h3>Réserver un essai</h3>
+        <p class="modal-config" id="booking-config"></p>
+        <label>Nom <input name="nom" autocomplete="name" required /></label>
+        <label>E-mail <input name="email" type="email" autocomplete="email" required /></label>
+        <label>Concession
+          <select name="concession">
+            <option>Bordeaux</option>
+            <option>Lyon</option>
+            <option>Paris Batignolles</option>
+            <option>Nantes</option>
+          </select>
+        </label>
+        <p class="modal-note">Démonstration : rien n'est envoyé, aucune donnée n'est conservée.</p>
+        <div class="modal-actions">
+          <button type="button" class="link-arrow" id="booking-cancel">Annuler</button>
+          <button class="cta">Envoyer la demande</button>
+        </div>
+      </form>
+    </dialog>
+
+  </body>
+</html>
